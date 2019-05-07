@@ -97,3 +97,57 @@ class B < A
         'B'
     end
 end
+
+
+
+# [D] Dependency Inversion Principle
+# # Description # # # # # # # # # # #
+# High level modules should not depend upon low level modules. both should depend upon abstractions.
+# # # # # # # # # # # # # # # # # # #
+
+# Bad example
+
+class UsersController
+    def export
+        users = UserModel.all
+
+        case params[:format]
+        when :xlsx
+            XLSXExport.call(users)
+        when :csv
+            CSVExport.call(users)
+        end 
+    end
+end
+
+
+# Good example
+
+class ExportService
+    FORMATS = {
+        xlsx: XlsxExport,
+        csv:  CsvExport
+    }
+
+    def initialize(format:, users:)
+        @format = format
+        @users = users
+    end
+
+    def call
+        FORMATS[format].call(users)
+    end
+
+    private
+
+    attr_reader :format, :users
+end
+
+class UsersController
+    def export
+        users = UserModel.all
+
+        export_service = ExportService.new(format: params[:format], users: users)
+        export_service.call
+    end
+end
